@@ -1,0 +1,71 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+
+# Cargar datos de usuarios
+user_data = pd.read_csv('user_data.csv')
+
+# Cargar datos de contenido
+content_data = pd.read_csv('content_data.csv')
+
+# Eliminación de valores nulos
+user_data.dropna(inplace=True)
+content_data.dropna(inplace=True)
+
+# Transformación de datos
+user_data['watch_time'] = pd.to_datetime(user_data['watch_time'])
+
+# Comprobación de duplicados y su eliminación
+user_data.drop_duplicates(inplace=True)
+content_data.drop_duplicates(inplace=True)
+
+# Ejemplo de normalización de datos
+user_data['normalized_age'] = (user_data['age'] - user_data['age'].min()) / (user_data['age'].max() - user_data['age'].min())
+
+# Extracción de características principales del contenido
+features = content_data[['genre', 'duration', 'release_year']]
+
+# Normalización y escalado de datos
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(features)
+
+# Extracción de características y etiquetas
+X = user_data[['age', 'gender', 'watch_time']]  # Ejemplo de características
+y = user_data['rating']  # Variable objetivo
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Entrenar el modelo
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
+
+# Predicción
+y_pred = model.predict(X_test)
+
+# Evaluación del modelo
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Precisión: {accuracy}')
+
+# Predicción de preferencias
+predictions = model.predict(X_test)
+
+# Generación de recomendaciones personalizadas
+def recommend(user_id):
+    # Ejemplo de implementación de la función de recomendaciones
+    user_data = X_test[X_test['user_id'] == user_id]
+    predicted_ratings = model.predict(user_data)
+    
+    # Obtención de índices de las películas con las calificaciones más altas previstas
+    top_recommendations = predicted_ratings.argsort()[-10:][::-1]
+    
+    return top_recommendations
+
+unique_users = X_test['user_id'].unique()
+recommendations = []
+
+for user in unique_users:
+    user_recommendations = recommend(user)
+    recommendations.append(user_recommendations)
